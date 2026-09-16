@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-09-13T16:21:54",
+  "raw_file": "data/raw/corpus.jsonl",
+  "clean_file": "data/raw/corpus.clean.jsonl",
+  "raw_sha256": "81067b0fb2e71278a2a893f2725752f2cb5d9ec1ccfceeb658cecbe4a1e76ec2",
+  "clean_sha256": "521d293e2910c532fc4fbd1418a49400bd3f5b34f7e370da74624fd6c5a5038d",
+  "docs": 25168,
+  "chars": 70868855,
+  "by_source": {
+    "wikipedia": 5978,
+    "conversacional": 19178,
+    "seed_conversacional": 12
+  },
+  "filters": {
+    "min_chars": 100,
+    "max_chars": 100000,
+    "dedup": "normalized sha256",
+    "lang_filter": "stopwords+acentos PT",
+    "unicode": "NFC"
+  },
+  "notes": "Fase2: wikipedia 6000 + QA-PT 19285 + seed 12 (2026-09-13)"
+}

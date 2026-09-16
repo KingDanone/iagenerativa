@@ -1,0 +1,25 @@
+# Checklist de submissão
+
+- [x] Transformer próprio (`src/model.py`: MiniGPT)
+- [x] Self-attention própria (`src/attention.py`)
+- [x] Causal mask + teste anti-vazamento (`tests/test_attention.py`)
+- [x] MLP + LayerNorm + residual Pre-LN
+- [x] Tokenizer BPE próprio, vocab 4096, acentos PT (`src/tokenizer.py`)
+- [x] Dataset português (Wikipedia PT 5978 docs)
+- [x] Dataset conversacional (QA-PT 19178 + seed 12 no formato do chat)
+- [x] Limpeza (NFC/HTML/lixo) + dedup sha256 + filtro PT (`scripts/clean_data.py`)
+- [x] Dataset reproduzível (scripts + `metadata/dataset_manifest.json`, sem GB no Git)
+- [x] Treinamento real GPU (5000 steps, 17,4M params, logs)
+- [x] GPU funcionando (CUDA RTX 3050, 0,8GB medidos) + fallback CPU
+- [x] Mixed precision fp16+scaler + gradient accumulation (8×8=64)
+- [x] Checkpoints latest/best + resume (`--resume`)
+- [x] Geração (`generate.py`, temperature/top-k/top-p, para no EOS)
+- [x] Sampling (não-argmax por padrão)
+- [x] Chat CLI (`chat.py`: /help /history /reset /stats /exit)
+- [x] Contexto curto com truncamento (src/chat.py)
+- [x] Avaliação (`evaluate.py` + `eval/prompts_ptbr.txt` + artifacts)
+- [x] Testes (17 passed: tokenizer/dataset/attention/model/generation/checkpoint/chat)
+- [x] README completo + MATH + ARCHITECTURE + TRAINING + CHAT + RESULTS + VIDEO_DEMO
+- [x] Git preparado (.gitignore sem data/checkpoints/logs), SEM push (usuário publica)
+- [x] Sem pesos pré-treinados, sem APIs externas, sem respostas hardcoded
+- [x] Números todos medidos (nenhum inventado)

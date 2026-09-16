@@ -1,0 +1,39 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Data (never commit large corpora)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/seed_conversational.txt
+
+# Artifacts
+artifacts/checkpoints/*
+!artifacts/checkpoints/.gitkeep
+artifacts/evaluation/*
+!artifacts/evaluation/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Tokenizer artifacts (large vocabs keep local, small demo ok)
+artifacts/tokenizer/*
+!artifacts/tokenizer/.gitkeep
+!artifacts/tokenizer/tokenizer.json
+
+# Safety net - never commit weights/datasets even if moved
+*.pt
+*.npy
+*.jsonl
+!data/seed_conversational.txt
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
