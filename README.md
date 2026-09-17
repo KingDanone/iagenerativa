@@ -1,5 +1,12 @@
 # Mini IA Generativa em Português
 
+## Autores:
+
+- Luis Ricardo Laranjeira Vieira
+- André Neves Medeiros
+
+---
+
 Este projeto implementa e treina do zero um pequeno modelo de linguagem
 autoregressivo baseado em Transformer — **sem pesos pré-treinados, sem
 fine-tuning, sem APIs externas**. Todo texto gerado sai do próprio modelo.
