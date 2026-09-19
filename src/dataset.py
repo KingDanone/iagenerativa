@@ -45,13 +45,13 @@ def load_token_arrays(data_dir: str | Path) -> tuple[np.ndarray, np.ndarray]:
             val_files = [d / "val.npy"]
     if not train_files:
         raise FileNotFoundError(f"nenhum shard de treino em {d} (rode scripts/build_dataset.py)")
-    train = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in train_files]).astype(np.uint16)
+    train = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in train_files])
     if val_files:
-        val = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in val_files]).astype(np.uint16)
+        val = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in val_files])
     else:  # fallback: 5% final como validacao
         n_val = max(1024, int(len(train) * 0.05))
         val, train = train[-n_val:], train[:-n_val]
-    return np.array(train), np.array(val)
+    return np.ascontiguousarray(train), np.ascontiguousarray(val)
 
 
 def encode_and_shard(
@@ -61,8 +61,15 @@ def encode_and_shard(
     shard_tokens: int = 1_000_000,
     val_frac: float = 0.05,
     add_eos: bool = True,
+    shuffle_seed: int | None = 42,
 ) -> dict:
-    """Tokeniza textos e salva shards uint16 train/val. Retorna estatisticas."""
+    """Tokeniza textos e salva shards uint16 train/val. Retorna estatisticas.
+
+    Embaralha os docs (seed fixa) ANTES do split: sem isso a val seria so a
+    cauda do corpus (ex. seed dialogica concentrada no fim) e a metrica viesa.
+    """
+    import random
+
     from src.tokenizer import BPETokenizer  # lazy
 
     out = Path(out_dir)
@@ -71,14 +78,18 @@ def encode_and_shard(
     n_docs = 0
     n_chars = 0
     eos = [tokenizer.eos_id] if add_eos else []
+    if shuffle_seed is not None and not isinstance(texts, list):
+        texts = list(texts)  # gerador -> lista p/ embaralhar
+    if shuffle_seed is not None:
+        rng = random.Random(shuffle_seed)
+        rng.shuffle(texts)
     for t in texts:
         if not t or not t.strip():
             continue
         n_docs += 1
         n_chars += len(t)
         buf.extend(tokenizer.encode(t) + eos)
-    toks = np.array(buf, dtype=np.uint16) if len(buf) < 65535 or True else None
-    # uint16 exige vocab < 65536 (nosso vocab e' 4k) e ids < 65536: ok
+    # uint16 exige vocab < 65536 e ids < 65536: ok
     toks = np.asarray(buf, dtype=np.uint16)
     n_val = max(256, int(len(toks) * val_frac))
     train_toks, val_toks = toks[:-n_val], toks[-n_val:]

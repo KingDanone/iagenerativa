@@ -31,10 +31,13 @@ def main() -> None:
     p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer.json")
     p.add_argument("--out-dir", default="data/processed")
     p.add_argument("--val-frac", type=float, default=0.05)
+    p.add_argument("--shuffle-seed", type=int, default=42,
+                   help="seed do embaralhamento de docs antes do split (0/-1 = sem shuffle)")
     args = p.parse_args()
     tok = BPETokenizer.load(args.tokenizer)
-    stats = encode_and_shard(iter_texts(Path(args.input)), tok, args.out_dir, val_frac=args.val_frac)
-    words = None
+    seed = None if args.shuffle_seed is not None and args.shuffle_seed < 0 else args.shuffle_seed
+    stats = encode_and_shard(iter_texts(Path(args.input)), tok, args.out_dir,
+                             val_frac=args.val_frac, shuffle_seed=seed)
     print(f"dataset ok: {stats}")
     # registra contagem de palavras aproximada
     print(f"train_tokens={stats['train_tokens']:,} val_tokens={stats['val_tokens']:,}")

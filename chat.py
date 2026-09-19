@@ -26,8 +26,10 @@ def parse_args():
     p.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--top-k", type=int, default=40)
+    p.add_argument("--top-p", type=float, default=None)
     p.add_argument("--max-new-tokens", type=int, default=120)
-    p.add_argument("--max-context-tokens", type=int, default=512)
+    p.add_argument("--max-context-tokens", type=int, default=None,
+                   help="limite de contexto do chat; default = block_size do checkpoint")
     return p.parse_args()
 
 
@@ -40,7 +42,13 @@ def main() -> None:
     model.load_state_dict(ckpt["model_state"])
     tok = BPETokenizer.load(args.tokenizer)
     total, _ = count_parameters(model)
-    sess = ChatSession(max_context_tokens=args.max_context_tokens, encode_fn=tok.encode)
+    # contexto do chat nunca pode exceder o block_size do modelo (#ctx-mismatch)
+    block = int(cfg.get("block_size", 256))
+    ctx_limit = int(args.max_context_tokens) if args.max_context_tokens else block
+    if ctx_limit > block:
+        print(f"AVISO: max-context-tokens={ctx_limit} > block_size={block}; limitando a {block}")
+        ctx_limit = block
+    sess = ChatSession(max_context_tokens=ctx_limit, encode_fn=tok.encode)
 
     print("========================================")
     print("        MINI IA GENERATIVA")
@@ -71,8 +79,8 @@ def main() -> None:
             continue
         if user == "/stats":
             print(f"modelo=MiniGPT params={format_params(total)} device={device} "
-                  f"temp={args.temperature} top_k={args.top_k} "
-                  f"ctx_tokens={sess.context_tokens(user)} max_ctx={args.max_context_tokens}")
+                  f"temp={args.temperature} top_k={args.top_k} top_p={args.top_p} "
+                  f"ctx_tokens={sess.context_tokens(user)} max_ctx={ctx_limit} block={block}")
             continue
         if user.startswith("/"):
             print("comando desconhecido. /help")
@@ -81,12 +89,12 @@ def main() -> None:
         prompt = sess.build_prompt(user)
         # garante janela: trunca prompt a esquerda se preciso
         ids = tok.encode(prompt)
-        if len(ids) > args.max_context_tokens:
-            ids = ids[-args.max_context_tokens:]
+        if len(ids) > ctx_limit:
+            ids = ids[-ctx_limit:]
             prompt = tok.decode(ids)
         with torch.no_grad():
             resp = generate(model, tok, prompt, args.max_new_tokens, args.temperature,
-                            args.top_k, None, device).strip()
+                            args.top_k, args.top_p, device).strip()
         sess.add_turn(user, resp)
         sess.truncate()
         print(f"\nIA: {resp}\n")

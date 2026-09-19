@@ -27,9 +27,26 @@ def parse_args():
     p.add_argument("--out-dir", default="artifacts/evaluation")
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--top-k", type=int, default=40)
+    p.add_argument("--top-p", type=float, default=None)
     p.add_argument("--max-new-tokens", type=int, default=80)
     p.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     return p.parse_args()
+
+
+def logits_finite(model, tok, prompt: str, device) -> bool:
+    """Forward real no prompt: False se logits contiverem NaN/Inf (divergencia)."""
+    try:
+        ids = tok.encode(prompt)
+        ctx = getattr(model, "block_size", 256)
+        ids = ids[-ctx:] if len(ids) > ctx else ids
+        if not ids:
+            return True
+        x = torch.tensor([ids], dtype=torch.long, device=device)
+        with torch.no_grad():
+            logits, _ = model.to(device).eval()(x)
+        return bool(torch.isfinite(logits).all().item())
+    except Exception:
+        return False
 
 
 def main() -> None:
@@ -45,13 +62,13 @@ def main() -> None:
     ts = datetime.datetime.now().isoformat(timespec="seconds")
     results = []
     for i, pr in enumerate(prompts):
-        out = generate(model, tok, pr, args.max_new_tokens, args.temperature, args.top_k, None, device)
+        out = generate(model, tok, pr, args.max_new_tokens, args.temperature, args.top_k, args.top_p, device)
         rec = {"prompt": pr, "output": out, "model": "MiniGPT",
                "checkpoint": args.checkpoint, "temperature": args.temperature,
-               "top_k": args.top_k, "timestamp": ts,
+               "top_k": args.top_k, "top_p": args.top_p, "timestamp": ts,
                "repetition": repetition_stats(out),
                "empty": len(out.strip()) == 0,
-               "has_nan": False}
+               "has_nan": not logits_finite(model, tok, pr, device)}
         results.append(rec)
         print(f"[{i+1}/{len(prompts)}] P: {pr}\n   R: {out[:220]}\n")
     (out_dir / f"eval_{ts.replace(':','-')}.json").write_text(

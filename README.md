@@ -161,6 +161,6 @@ artifacts/ (tokenizer, checkpoints, evaluation) | data/ (raw, processed)
 
 ## 17. Licença
 
-Código: MIT (ver LICENSE, a criar na publicação). Dados: cada fonte mantém
+Código: MIT (ver LICENSE). Dados: cada fonte mantém
 sua licença (Wikipedia CC BY-SA; QA-PT verificar; seed próprio livre) —
 detalhes em `docs/DATASET_SELECTION.md`. Este repo não redistribui corpora.
