@@ -46,8 +46,19 @@ def main() -> None:
         "docs": n,
         "chars": chars,
         "by_source": dict(by_src),
+        "licenses": {
+            "fineweb2": "ODC-By 1.0 (HuggingFaceFW/fineweb-2 por_Latn)",
+            "wikipedia": "CC BY-SA (wikimedia/wikipedia 20231101.pt)",
+            "carolina": "mista (ver corpus-carolina)",
+            "oscar": "mista (ver OSCAR-2201)",
+            "conversacional": "Jpzinn654/qa-portuguese-small / piaf (verificar)",
+            "aya_pt": "Apache-2.0 (CohereForAI/aya_dataset)",
+            "oasst_pt": "Apache-2.0 (OpenAssistant/oasst1)",
+            "seed_conversacional": "propria, livre",
+        },
         "filters": {"min_chars": 100, "max_chars": 100000, "dedup": "normalized sha256",
-                    "lang_filter": "stopwords+acentos PT", "unicode": "NFC"},
+                    "lang_filter": "stopwords+acentos PT", "unicode": "NFC",
+                    "spam_blocklist": "catracalivre/promo/bets"},
         "notes": args.notes,
     }
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
