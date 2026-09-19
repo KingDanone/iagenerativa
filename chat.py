@@ -53,7 +53,9 @@ def main() -> None:
     print("========================================")
     print("        GUARÁ — IA GENERATIVA")
     print("========================================")
-    print(f"\nModelo: Guará ({format_params(total)}) | Device: {device}")
+    ver = ckpt.get("config", {}).get("version", "?")
+    name = ckpt.get("config", {}).get("model_name", "Guará")
+    print(f"\nModelo: {name} v{ver} ({format_params(total)}) | Device: {device}")
     print(f"Checkpoint: {args.checkpoint}")
     print("\nDigite /help para ajuda.\nDigite /exit para sair.\n")
     while True:
@@ -78,7 +80,7 @@ def main() -> None:
             print(sess.render_history())
             continue
         if user == "/stats":
-            print(f"modelo=Guará params={format_params(total)} device={device} "
+            print(f"modelo={name} v{ver} params={format_params(total)} device={device} "
                   f"temp={args.temperature} top_k={args.top_k} top_p={args.top_p} "
                   f"ctx_tokens={sess.context_tokens(user)} max_ctx={ctx_limit} block={block}")
             continue

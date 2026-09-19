@@ -1,4 +1,6 @@
 {
+  "model_name": "Guará",
+  "version": "1.0",
   "vocab_size": 4096,
   "block_size": 256,
   "n_embd": 384,

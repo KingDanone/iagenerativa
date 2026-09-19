@@ -45,6 +45,9 @@ def main() -> None:
     out = generate(model, tok, args.prompt, args.max_new_tokens, args.temperature,
                    args.top_k, args.top_p, device)
     print(out)
+    ver = ckpt.get("config", {}).get("version", "?")
+    name = ckpt.get("config", {}).get("model_name", "Guará")
+    print(f"[{name} v{ver}]")
 
 
 if __name__ == "__main__":

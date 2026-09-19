@@ -159,13 +159,21 @@ tests/ | eval/prompts_ptbr.txt | docs/ | metadata/ | experiments/ | logs/
 artifacts/ (tokenizer, checkpoints, evaluation) | data/ (raw, processed)
 ```
 
-## 17. Licença
+## 17. Sobre o Guará
+
+Marca da família de modelos (nome, versões, convenções):
+ver `docs/GUARA_BRAND.md`. Versão atual: **Guará 1.0** (`VERSION`).
+
+## 18. Treino realizado
+
+**Guará** é a marca da família de modelos deste projeto (ver `docs/GUARA_BRAND.md`).
+
+- **Guará 1.0** — ajuste conversacional (14000 steps, 49M tokens PT): val=0,69/PPL=1,99 → `artifacts/checkpoints_chat/best.pt`. Padrão do `chat.py`.
+- **Guará 1.0-base** — baseline Fase 2 (5000 steps, 82M tokens gerais): val=2,55/PPL~12,8 → `artifacts/checkpoints/best.pt`.
+
+## 19. Licença
 
 Código: MIT (ver LICENSE). Dados: cada fonte mantém
 sua licença (Wikipedia CC BY-SA; QA-PT verificar; seed próprio livre) —
 detalhes em `docs/DATASET_SELECTION.md` e `metadata/dataset_manifest_v2.json`.
-
-## 18. Treino realizado
-
-- **Fase 2** (baseline): 5000 steps, 82M tokens, val=2,55/PPL~12,8, 17,4M params — ver `docs/RESULTS.md`.
-- **Guará — ajuste conversacional**: 14000 steps no total (3000 + 11000), 49M tokens de conversação PT (mix de QA-PT/Aya-PT/OASST-PT + replay), a partir dos pesos da Fase 2. Resultado: val=0,69/PPL=1,99, checkpoints em `artifacts/checkpoints_chat/`. Sem pesos pré-treinados, sem biblioteca de modelo, 100% próprio.
+Este repo não redistribui corpora.
