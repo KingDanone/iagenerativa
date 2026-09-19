@@ -21,7 +21,7 @@ from src.utils import count_parameters, format_params, load_checkpoint, resolve_
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", default="artifacts/checkpoints/best.pt")
+    p.add_argument("--checkpoint", default="artifacts/checkpoints_chat/best.pt")
     p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer.json")
     p.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--temperature", type=float, default=0.8)
