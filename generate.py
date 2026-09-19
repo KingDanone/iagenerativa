@@ -21,7 +21,7 @@ from src.utils import load_checkpoint, resolve_device  # noqa: E402
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--prompt", required=True)
-    p.add_argument("--checkpoint", default="artifacts/checkpoints/best.pt")
+    p.add_argument("--checkpoint", default="artifacts/checkpoints_chat/best.pt")
     p.add_argument("--config", default=None)
     p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer.json")
     p.add_argument("--max-new-tokens", type=int, default=80)

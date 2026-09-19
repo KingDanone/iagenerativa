@@ -50,11 +50,11 @@ def check_logits_finite(model, tok, prompt: str, device) -> bool:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", default="artifacts/checkpoints_v2/best.pt")
-    p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer_v2.json")
+    p.add_argument("--checkpoint", default="artifacts/checkpoints_chat/best.pt")
+    p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer.json")
     p.add_argument("--prompts", default="eval/prompts_ptbr.txt")
     p.add_argument("--baseline", default="artifacts/evaluation/eval_2026-09-18T22-34-08.json")
-    p.add_argument("--log", default="logs_v2/train.log")
+    p.add_argument("--log", default="logs_chat/train.log")
     p.add_argument("--temperature", type=float, default=0.8)
     p.add_argument("--top-k", type=int, default=40)
     p.add_argument("--max-new-tokens", type=int, default=80)

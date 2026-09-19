@@ -21,7 +21,7 @@ from src.utils import ensure_dir, load_checkpoint, resolve_device  # noqa: E402
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", default="artifacts/checkpoints/best.pt")
+    p.add_argument("--checkpoint", default="artifacts/checkpoints_chat/best.pt")
     p.add_argument("--tokenizer", default="artifacts/tokenizer/tokenizer.json")
     p.add_argument("--prompts", default="eval/prompts_ptbr.txt")
     p.add_argument("--out-dir", default="artifacts/evaluation")
