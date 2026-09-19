@@ -58,3 +58,17 @@ def test_specials_and_save_load():
         t2 = BPETokenizer.load(p)
         assert t2.encode("Programação") == tok.encode("Programação")
         assert t2.decode(tok.encode("São Luís")) == tok.decode(tok.encode("São Luís"))
+
+
+def test_whitespace_exact_roundtrip():
+    corpus = CORPUS + ["Primeira linha.\n\nSegunda linha.\n  Indentado.\n"]
+    tok = BPETokenizer(vocab_size=256).train(corpus, vocab_size=256)
+    for s in ["a  b", "a\n\nb", "  indentado", "fim de linha\n", "Olá,  mundo!\n\nSegunda linha."]:
+        assert tok.decode(tok.encode(s)) == s, f"roundtrip quebrou p/ {s!r}"
+
+
+def test_encode_cache_deterministic():
+    tok = BPETokenizer(vocab_size=256).train(CORPUS, vocab_size=256)
+    a = tok.encode("São Luís é uma cidade brasileira.")
+    b = tok.encode("São Luís é uma cidade brasileira.")
+    assert a == b and len(tok._encode_cache) > 0
