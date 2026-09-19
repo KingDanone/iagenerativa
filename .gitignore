@@ -10,9 +10,11 @@ __pycache__/
 data/raw/*
 data/processed/*
 data/processed_v2/*
+data/processed_chat/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/processed_v2/.gitkeep
+!data/processed_chat/.gitkeep
 !data/seed_conversational.txt
 
 # Artifacts
@@ -20,11 +22,15 @@ artifacts/checkpoints/*
 !artifacts/checkpoints/.gitkeep
 artifacts/checkpoints_v2/*
 !artifacts/checkpoints_v2/.gitkeep
+artifacts/checkpoints_chat/*
+!artifacts/checkpoints_chat/.gitkeep
 artifacts/evaluation/*
 !artifacts/evaluation/.gitkeep
 logs/*
 !logs/.gitkeep
 logs_v2/
+logs_chat/
+logs_chat_train.log
 experiments_v2/
 
 # Tokenizer artifacts (large vocabs keep local, small demo ok)

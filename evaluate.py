@@ -63,7 +63,7 @@ def main() -> None:
     results = []
     for i, pr in enumerate(prompts):
         out = generate(model, tok, pr, args.max_new_tokens, args.temperature, args.top_k, args.top_p, device)
-        rec = {"prompt": pr, "output": out, "model": "MiniGPT",
+        rec = {"prompt": pr, "output": out, "model": "Guará",
                "checkpoint": args.checkpoint, "temperature": args.temperature,
                "top_k": args.top_k, "top_p": args.top_p, "timestamp": ts,
                "repetition": repetition_stats(out),

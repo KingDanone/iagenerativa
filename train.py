@@ -27,6 +27,8 @@ def parse_args():
     p.add_argument("--config", default="configs/debug.json")
     p.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     p.add_argument("--resume", default=None)
+    p.add_argument("--init-from", default=None,
+                   help="só pesos do modelo (otimizador/schedule do zero; p/ ajuste fino)")
     p.add_argument("--dry-run", action="store_true", help="forward+VRAM check, sem treinar")
     p.add_argument("--max-steps", type=int, default=None)
     return p.parse_args()
@@ -55,6 +57,13 @@ def main() -> None:
     model = build_model(cfg)
     if cfg.get("compile"):
         try:
+            import torch._inductor.config as _icfg
+            # compile paralelo come RAM (12 workers Triton/gcc); limita p/ nao
+            # travar a maquina (freeze por memory pressure em 00:19 19/09)
+            _icfg.compile_threads = int(cfg.get("compile_threads", 2))
+        except Exception as e:
+            print(f"limite de compile threads indisponivel ({e})")
+        try:
             model = torch.compile(model)
             print("torch.compile ativo")
         except Exception as e:
@@ -71,6 +80,10 @@ def main() -> None:
         cfg["_opt_state"] = ckpt.get("optimizer_state")
         cfg["_best_val"] = ckpt.get("best_val", float("inf"))
         print(f"resume: {args.resume} step={cfg['_start_step']}")
+    elif args.init_from:
+        ckpt = load_checkpoint(args.init_from, map_location="cpu")
+        model.load_state_dict(ckpt["model_state"])
+        print(f"init-from (pesos): {args.init_from} (schedule/otimizador do zero)")
 
     # dry run: forward curto p/ estimar VRAM antes de horas de treino (#111/#112)
     try:
@@ -94,7 +107,13 @@ def main() -> None:
     print(f"tokens: train={len(train_toks):,} val={len(val_toks):,}")
     bs = int(cfg.get("batch_size", 8))
     nw = int(cfg.get("num_workers", 0))
-    train_loader = DataLoader(LMDataset(train_toks, cfg["block_size"]), batch_size=bs, shuffle=True,
+    from torch.utils.data import RandomSampler
+    # replacement=True: randint por sample, sem permutacao de 552M int64 (4,4GB RAM).
+    # cobertura ~63% unica/epoca — padrao aceitavel p/ LM.
+    train_ds = LMDataset(train_toks, cfg["block_size"])
+    train_loader = DataLoader(train_ds, batch_size=bs, shuffle=False,
+                              sampler=RandomSampler(train_ds, replacement=True,
+                                                    num_samples=len(train_ds)),
                               num_workers=nw, drop_last=True)
     val_loader = DataLoader(LMDataset(val_toks, cfg["block_size"]), batch_size=bs, shuffle=False,
                             num_workers=nw, drop_last=True)

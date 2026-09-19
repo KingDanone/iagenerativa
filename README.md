@@ -1,4 +1,4 @@
-# Mini IA Generativa em Português
+# Guará — Mini IA Generativa em Português
 
 ## Autores:
 
@@ -59,7 +59,7 @@ Como usar a IA deste projeto (treino, geração e chat), passo a passo:
 
 ## 1. Visão geral
 
-MiniGPT decoder-only de **17,4M parâmetros**, treinado em **31,7M tokens**
+Guará, decoder-only próprio de **17,4M parâmetros**, treinado em **31,7M tokens**
 de português (Wikipedia + QA + seed dialógico), com chat CLI, avaliação
 e documentação acadêmica completas.
 

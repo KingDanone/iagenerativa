@@ -45,13 +45,22 @@ def load_token_arrays(data_dir: str | Path) -> tuple[np.ndarray, np.ndarray]:
             val_files = [d / "val.npy"]
     if not train_files:
         raise FileNotFoundError(f"nenhum shard de treino em {d} (rode scripts/build_dataset.py)")
+    # 1 shard (caso comum): usa mmap direto, sem copiar 1GB+ p/ RAM
+    if len(train_files) == 1 and val_files:
+        train = np.load(str(train_files[0]), mmap_mode="r")
+        if str(train.dtype) != "uint16":
+            train = train.astype(np.uint16)
+        val = np.load(str(val_files[0]), mmap_mode="r")
+        if str(val.dtype) != "uint16":
+            val = val.astype(np.uint16)
+        return train, val
     train = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in train_files])
     if val_files:
         val = np.concatenate([np.load(str(f), mmap_mode="r").astype(np.uint16) for f in val_files])
     else:  # fallback: 5% final como validacao
         n_val = max(1024, int(len(train) * 0.05))
         val, train = train[-n_val:], train[:-n_val]
-    return np.ascontiguousarray(train), np.ascontiguousarray(val)
+    return train, val
 
 
 def encode_and_shard(

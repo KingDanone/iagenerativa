@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-09-18T23:36:44",
+  "raw_file": "data/raw/corpus_v2.jsonl",
+  "clean_file": "data/raw/corpus_v2.clean.jsonl",
+  "raw_sha256": "f2be775f4503f1bc65a6a7fc7a2193b5688944b3adbd739958c0ec40f6da5eaf",
+  "clean_sha256": "b382cffc6c9a705d18f6445f0b90e5c471688501b9e4b46edb26de58572a18b1",
+  "docs": 783938,
+  "chars": 1409337238,
+  "by_source": {
+    "fineweb2": 316026,
+    "wikipedia": 46686,
+    "conversacional": 413343,
+    "aya_pt": 7717,
+    "oasst_pt": 154,
+    "seed_conversacional": 12
+  },
+  "licenses": {
+    "fineweb2": "ODC-By 1.0 (HuggingFaceFW/fineweb-2 por_Latn)",
+    "wikipedia": "CC BY-SA (wikimedia/wikipedia 20231101.pt)",
+    "carolina": "mista (ver corpus-carolina)",
+    "oscar": "mista (ver OSCAR-2201)",
+    "conversacional": "Jpzinn654/qa-portuguese-small / piaf (verificar)",
+    "aya_pt": "Apache-2.0 (CohereForAI/aya_dataset)",
+    "oasst_pt": "Apache-2.0 (OpenAssistant/oasst1)",
+    "seed_conversacional": "propria, livre"
+  },
+  "filters": {
+    "min_chars": 100,
+    "max_chars": 100000,
+    "dedup": "normalized sha256",
+    "lang_filter": "stopwords+acentos PT",
+    "unicode": "NFC",
+    "spam_blocklist": "catracalivre/promo/bets"
+  },
+  "notes": "fase3 v2: fineweb2+wiki+carolina+qa+aya+oasst+seed"
+}

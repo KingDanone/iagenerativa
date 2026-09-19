@@ -51,9 +51,9 @@ def main() -> None:
     sess = ChatSession(max_context_tokens=ctx_limit, encode_fn=tok.encode)
 
     print("========================================")
-    print("        MINI IA GENERATIVA")
+    print("        GUARÁ — IA GENERATIVA")
     print("========================================")
-    print(f"\nModelo: MiniGPT ({format_params(total)}) | Device: {device}")
+    print(f"\nModelo: Guará ({format_params(total)}) | Device: {device}")
     print(f"Checkpoint: {args.checkpoint}")
     print("\nDigite /help para ajuda.\nDigite /exit para sair.\n")
     while True:
@@ -78,7 +78,7 @@ def main() -> None:
             print(sess.render_history())
             continue
         if user == "/stats":
-            print(f"modelo=MiniGPT params={format_params(total)} device={device} "
+            print(f"modelo=Guará params={format_params(total)} device={device} "
                   f"temp={args.temperature} top_k={args.top_k} top_p={args.top_p} "
                   f"ctx_tokens={sess.context_tokens(user)} max_ctx={ctx_limit} block={block}")
             continue

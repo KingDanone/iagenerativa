@@ -38,6 +38,15 @@ def budget_ok(path: Path, max_gb: float) -> bool:
     return path.exists() and path.stat().st_size >= max_gb * 1024**3
 
 
+def iter_rows(ds, source_name: str):
+    """Itera stream HF tolerando queda de rede no meio: mantem o parcial."""
+    try:
+        for row in ds:
+            yield row
+    except Exception as e:
+        print(f"AVISO: stream {source_name} interrompido (rede?). Parcial mantido: {e}")
+
+
 class JsonlWriter:
     """Escritor com handle persistente (antes: open/close por doc, 25k opens)."""
 
@@ -79,7 +88,7 @@ def fetch_wikipedia(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tup
     if ds is None:
         print("AVISO: wikipedia indisponivel (offline?). Pulando.")
         return 0, 0
-    for row in ds:
+    for row in iter_rows(ds, "wikipedia"):
         txt = (row.get("text") or "").strip()
         title = row.get("title") or ""
         if len(txt) < 300:
@@ -94,7 +103,7 @@ def fetch_wikipedia(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tup
 
 
 def fetch_generic_hf(dataset: str, config: str | None, text_field: str, source: str, w: JsonlWriter,
-                     max_bytes: int, max_docs: int | None, start_bytes: int) -> tuple[int, int]:
+                     max_bytes: int, max_docs: int | None) -> tuple[int, int]:
     from datasets import load_dataset
     n_docs = n_bytes = 0
     try:
@@ -103,7 +112,7 @@ def fetch_generic_hf(dataset: str, config: str | None, text_field: str, source: 
     except Exception as e:
         print(f"AVISO: {dataset} indisponivel: {e}. Pulando.")
         return 0, 0
-    for row in ds:
+    for row in iter_rows(ds, dataset):
         txt = str(row.get(text_field) or "").strip()
         if len(txt) < 200:
             continue
@@ -111,12 +120,12 @@ def fetch_generic_hf(dataset: str, config: str | None, text_field: str, source: 
         n_docs += 1
         if max_docs and n_docs >= max_docs:
             break
-        if start_bytes + n_bytes >= max_bytes:
+        if n_bytes >= max_bytes:
             break
     return n_docs, n_bytes
 
 
-def fetch_fineweb2_por(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_bytes: int) -> tuple[int, int]:
+def fetch_fineweb2_por(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tuple[int, int]:
     """FineWeb-2 por_Latn: web PT ja limpa/dedupada (datatrove), licenca ODC-By."""
     from datasets import load_dataset
     n_docs = n_bytes = 0
@@ -125,7 +134,7 @@ def fetch_fineweb2_por(w: JsonlWriter, max_bytes: int, max_docs: int | None, sta
     except Exception as e:
         print(f"AVISO: fineweb-2 por_Latn indisponivel: {e}. Pulando.")
         return 0, 0
-    for row in ds:
+    for row in iter_rows(ds, "fineweb2"):
         try:
             txt = str(row.get("text") or "").strip()
         except Exception:
@@ -138,7 +147,7 @@ def fetch_fineweb2_por(w: JsonlWriter, max_bytes: int, max_docs: int | None, sta
             print(f"  fineweb2: docs={n_docs} mb={n_bytes/1e6:.0f}", flush=True)
         if max_docs and n_docs >= max_docs:
             break
-        if start_bytes + n_bytes >= max_bytes:
+        if n_bytes >= max_bytes:
             break
     return n_docs, n_bytes
 
@@ -162,7 +171,7 @@ def _row_field(row: dict, names: tuple[str, ...]) -> str:
     return ""
 
 
-def fetch_aya_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_bytes: int) -> tuple[int, int]:
+def fetch_aya_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tuple[int, int]:
     """CohereForAI/aya_dataset filtrado p/ PT: instrucoes humanas (Apache-2.0)."""
     from datasets import load_dataset
     n_docs = n_bytes = 0
@@ -171,7 +180,7 @@ def fetch_aya_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_byt
     except Exception as e:
         print(f"AVISO: aya_dataset indisponivel: {e}. Pulando.")
         return 0, 0
-    for row in ds:
+    for row in iter_rows(ds, "aya_dataset"):
         try:
             if _row_lang(row) not in _PT_LANGS:
                 continue
@@ -186,7 +195,7 @@ def fetch_aya_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_byt
             n_docs += 1
             if max_docs and n_docs >= max_docs:
                 break
-            if start_bytes + n_bytes >= max_bytes:
+            if n_bytes >= max_bytes:
                 break
         except Exception:
             continue
@@ -229,7 +238,7 @@ def _serialize_oasst_thread(msgs: list[dict]) -> str | None:
     return "\n\n".join(blocks).strip()
 
 
-def fetch_oasst_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_bytes: int) -> tuple[int, int]:
+def fetch_oasst_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tuple[int, int]:
     """OpenAssistant/oasst1 filtrado lang==pt: dialogos multi-turno humanos (Apache-2.0).
 
     Bufferiza so mensagens PT (subconjunto pequeno) e monta threads por
@@ -242,7 +251,7 @@ def fetch_oasst_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_b
         print(f"AVISO: oasst1 indisponivel: {e}. Pulando.")
         return 0, 0
     trees: dict[str, list[dict]] = {}
-    for row in ds:
+    for row in iter_rows(ds, "oasst1"):
         try:
             lang = str(row.get("lang") or "").strip().lower()
             if lang not in _PT_LANGS:
@@ -269,12 +278,12 @@ def fetch_oasst_pt(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_b
         n_docs += 1
         if max_docs and n_docs >= max_docs:
             break
-        if start_bytes + n_bytes >= max_bytes:
+        if n_bytes >= max_bytes:
             break
     return n_docs, n_bytes
 
 
-def fetch_conversacional(w: JsonlWriter, max_bytes: int, max_docs: int | None, start_bytes: int) -> tuple[int, int]:
+def fetch_conversacional(w: JsonlWriter, max_bytes: int, max_docs: int | None) -> tuple[int, int]:
     """QA/instrucao PT: tenta HF, senao usa seed local expandido."""
     total_docs = total_bytes = 0
     # 1) tenta dataset QA portugues pequeno
@@ -291,7 +300,7 @@ def fetch_conversacional(w: JsonlWriter, max_bytes: int, max_docs: int | None, s
                 print(f"conversacional {ds_name}: {e}")
                 continue
             got = 0
-            for row in ds:
+            for row in iter_rows(ds, ds_name):
                 try:
                     if ds_name.startswith("Jpzinn654"):
                         q = ((row.get("question_title") or "") + " " + (row.get("question_text") or "")).strip()
@@ -314,7 +323,7 @@ def fetch_conversacional(w: JsonlWriter, max_bytes: int, max_docs: int | None, s
                     got += 1
                     if max_docs and total_docs >= max_docs:
                         break
-                    if start_bytes + total_bytes >= max_bytes:
+                    if total_bytes >= max_bytes:
                         break
                 except Exception:
                     continue
@@ -350,7 +359,7 @@ SOURCE_LICENSES = {
     "conversacional": "Jpzinn654/qa-portuguese-small (verificar) / piaf",
     "aya": "Apache-2.0 (CohereForAI/aya_dataset, subset PT)",
     "oasst": "Apache-2.0 (OpenAssistant/oasst1, subset PT)",
-    "seed_conversacional": "propria, livre",
+    "seed": "propria (data/seed_conversational.txt), livre",
 }
 
 
@@ -382,21 +391,21 @@ def main() -> None:
                 break
             cap = min(per_source_cap.get(src, remaining), remaining)
             if src == "fineweb2":
-                d, b = fetch_fineweb2_por(w, cap, args.max_docs, grand_bytes)
+                d, b = fetch_fineweb2_por(w, cap, args.max_docs)
             elif src == "wikipedia":
                 d, b = fetch_wikipedia(w, cap, args.max_docs)
             elif src == "carolina":
                 d, b = fetch_generic_hf("carolina-c4ai/corpus-carolina", None, "text", "carolina",
-                                        w, cap, args.max_docs, grand_bytes)
+                                        w, cap, args.max_docs)
             elif src == "oscar":
                 d, b = fetch_generic_hf("oscar-corpus/OSCAR-2201", "pt", "text", "oscar",
-                                        w, cap, args.max_docs, grand_bytes)
+                                        w, cap, args.max_docs)
             elif src == "conversacional":
-                d, b = fetch_conversacional(w, cap, args.max_docs, grand_bytes)
+                d, b = fetch_conversacional(w, cap, args.max_docs)
             elif src == "aya":
-                d, b = fetch_aya_pt(w, cap, args.max_docs, grand_bytes)
+                d, b = fetch_aya_pt(w, cap, args.max_docs)
             elif src == "oasst":
-                d, b = fetch_oasst_pt(w, cap, args.max_docs, grand_bytes)
+                d, b = fetch_oasst_pt(w, cap, args.max_docs)
             elif src == "seed":
                 d, b = copy_seed(w)
             else:
