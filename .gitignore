@@ -9,22 +9,29 @@ __pycache__/
 # Data (never commit large corpora)
 data/raw/*
 data/processed/*
+data/processed_v2/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/processed_v2/.gitkeep
 !data/seed_conversational.txt
 
 # Artifacts
 artifacts/checkpoints/*
 !artifacts/checkpoints/.gitkeep
+artifacts/checkpoints_v2/*
+!artifacts/checkpoints_v2/.gitkeep
 artifacts/evaluation/*
 !artifacts/evaluation/.gitkeep
 logs/*
 !logs/.gitkeep
+logs_v2/
+experiments_v2/
 
 # Tokenizer artifacts (large vocabs keep local, small demo ok)
 artifacts/tokenizer/*
 !artifacts/tokenizer/.gitkeep
 !artifacts/tokenizer/tokenizer.json
+artifacts/tokenizer_v2/*
 
 # Safety net - never commit weights/datasets even if moved
 *.pt

@@ -1,6 +1,7 @@
 """Loop de treinamento: AdamW + warmup/cosseno + AMP + acumulacao + checkpoints."""
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from pathlib import Path
@@ -13,10 +14,11 @@ from src.utils import ensure_dir, lr_schedule, save_checkpoint, vram_snapshot
 
 
 def unwrap_amp_dtype(device: torch.device, use_amp: bool) -> tuple[bool, torch.dtype, bool]:
-    """Retorna (amp_ok, dtype, use_scaler). RTX 3050 -> fp16+scaler; CPU -> sem AMP."""
+    """Retorna (amp_ok, dtype, use_scaler). Prefere bf16 (sem scaler, estavel)."""
     if not use_amp or device.type != "cuda":
         return False, torch.float32, False
-    # 3050 (Ampere, sm_86) tem bf16? Nem sempre eficiente; prioriza fp16+scaler.
+    if torch.cuda.is_bf16_supported():
+        return True, torch.bfloat16, False
     return True, torch.float16, True
 
 
@@ -51,11 +53,18 @@ def train_loop(cfg: dict, model: nn.Module, train_loader: DataLoader, val_loader
     save_interval = int(cfg.get("save_interval", 500))
     patience = cfg.get("early_stopping_patience")
 
-    opt = torch.optim.AdamW(
-        model.parameters(), lr=base_lr,
-        weight_decay=float(cfg.get("weight_decay", 0.01)),
-        betas=(0.9, 0.95),
-    )
+    try:
+        opt = torch.optim.AdamW(
+            model.parameters(), lr=base_lr,
+            weight_decay=float(cfg.get("weight_decay", 0.01)),
+            betas=(0.9, 0.95), fused=True,
+        )
+    except (TypeError, RuntimeError):
+        opt = torch.optim.AdamW(
+            model.parameters(), lr=base_lr,
+            weight_decay=float(cfg.get("weight_decay", 0.01)),
+            betas=(0.9, 0.95),
+        )
     start_step = int(cfg.get("_start_step", 0))
     if "_opt_state" in cfg and cfg["_opt_state"] is not None:
         try:
@@ -98,7 +107,7 @@ def train_loop(cfg: dict, model: nn.Module, train_loader: DataLoader, val_loader
         for _ in range(accum):
             x, y = get_batch()
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
-            ctx = torch.amp.autocast("cuda", dtype=amp_dtype) if amp_ok else torch.cpu.amp.autocast(enabled=False) if False else _null_ctx()
+            ctx = torch.amp.autocast("cuda", dtype=amp_dtype) if amp_ok else contextlib.nullcontext()
             with ctx:
                 _, loss = model(x, y)
                 loss = loss / accum
@@ -194,8 +203,3 @@ def _safe_ppl(loss: float) -> float:
         return math.exp(loss) if loss < 20 else float("inf")
     except OverflowError:
         return float("inf")
-
-
-class _null_ctx:
-    def __enter__(self): return None
-    def __exit__(self, *a): return False

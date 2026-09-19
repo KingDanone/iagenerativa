@@ -69,6 +69,7 @@ class MiniGPT(nn.Module):
         )
         self.norm_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
+        self.grad_checkpoint = False
         self.apply(self._init_weights)
 
     @staticmethod
@@ -78,14 +79,23 @@ class MiniGPT(nn.Module):
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.zeros_(m.bias)
 
+    def enable_gradient_checkpointing(self) -> None:
+        """Recomputa ativacoes no backward: -~60% VRAM por +~20% tempo."""
+        self.grad_checkpoint = True
+
     def forward(self, idx: torch.Tensor, targets: torch.Tensor | None = None):
         B, T = idx.shape
         assert T <= self.block_size, f"sequencia T={T} > block_size={self.block_size}"
         tok = self.tok_emb(idx)
         pos = self.pos_emb(torch.arange(T, device=idx.device))
         x = self.drop(tok + pos)
-        for blk in self.blocks:
-            x = blk(x)
+        if self.grad_checkpoint and self.training:
+            import torch.utils.checkpoint as ckpt
+            for blk in self.blocks:
+                x = ckpt.checkpoint(blk, x, use_reentrant=False)
+        else:
+            for blk in self.blocks:
+                x = blk(x)
         x = self.norm_f(x)
         logits = self.lm_head(x)  # [B,T,V]
         loss = None
@@ -101,7 +111,7 @@ class MiniGPT(nn.Module):
 
 
 def build_model(cfg: dict) -> MiniGPT:
-    return MiniGPT(
+    m = MiniGPT(
         vocab_size=int(cfg["vocab_size"]),
         block_size=int(cfg["block_size"]),
         n_embd=int(cfg.get("n_embd", 256)),
@@ -110,3 +120,6 @@ def build_model(cfg: dict) -> MiniGPT:
         mlp_ratio=int(cfg.get("mlp_ratio", 4)),
         dropout=float(cfg.get("dropout", 0.1)),
     )
+    if cfg.get("grad_checkpoint"):
+        m.enable_gradient_checkpointing()
+    return m

@@ -53,6 +53,12 @@ def main() -> None:
         print("AVISO: tokenizer nao encontrado; usando vocab da config")
 
     model = build_model(cfg)
+    if cfg.get("compile"):
+        try:
+            model = torch.compile(model)
+            print("torch.compile ativo")
+        except Exception as e:
+            print(f"torch.compile indisponivel ({e}); seguindo sem compilar")
     total, trainable = count_parameters(model)
     print(f"parametros: total={format_params(total)} treinaveis={format_params(trainable)} "
           f"pesos_fp32~{total*4/1024**2:.1f}MB | L={cfg.get('n_layer')} H={cfg.get('n_head')} "
