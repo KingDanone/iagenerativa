@@ -1,52 +1,52 @@
-# Fase 3 v2 — Base maior + foco conversacional (100% do zero)
+## O que foi treinado (realizado ✅)
 
-Nada aqui usa peso pré-treinado, biblioteca de modelo ou API externa.
-Só **dados públicos** alimentam o tokenizer, o Transformer e o loop de treino próprios.
+Por decisão do autor (17M params / 26M tokens conversacionais), optou-se por um
+ajuste fino conversacional **curto** em vez do treino base de 16k steps.
 
-## Pipeline v2 (rodando)
+### Fase 3 — Ajuste Guará (3000 + 14000 steps, ~26 + ~90 min)
+
+- **Dados**: `data/raw/corpus_chat.jsonl` (mix de 421k docs conversacionais PT +
+  20% replay de conhecimento → 505k docs, 215M tokens). Script: `scripts/make_chat_mix.py`.
+- **Início**: pesos da Fase 2 (`--init-from artifacts/checkpoints/best.pt`), LR 1e-4,
+  schedule próprio.
+- **Continuação**: 11000 steps extras com LR 5e-5 → total 14000 steps / 49M tokens.
+- **Resultado final** (`artifacts/checkpoints_chat/best.pt`, step 13000):
+  - best_val=0,689 → PPL=1,99 (val) | train_final=1,76
+  - 20/20 prompts sem vazios, sem NaN, 20/20 `div_ok`
+  - VRAM máx: 0,8/5,7 GB | throughput ~33k tok/s
+- **Configuração**: `configs/chat_tune.json` (3000 steps) + `configs/chat_tune_cont.json` (continuação 14000).
+- **Saída**: `artifacts/checkpoints_chat/best.pt`, `latest.pt`.
+
+## Base maior (não realizada ⏸️)
+
+O treino base de 16k steps (~21h, config `configs/gpu_v2.json`, ~90M params,
+bf16 + compile + grad-checkpoint) foi lançado mas abortado pelo freeze de RAM
+do notebook (ver abaixo). Ficou documentado em `configs/gpu_v2.json` para
+execução futura. Se executar, o checkpoint de retoma é `artifacts/checkpoints_v2/latest.pt`
+(caso exista).
+
+## Freeze de RAM (incidente 19/09 ~00:19)
+
+O notebook travou por **esgotamento de RAM** (não GPU):
+- `journalctl -b -1` mostra `Under memory pressure` às 00:19:39 e `Power key pressed` às 00:19:42.
+- Causa raiz: `RandomSampler(shuffle=True)` materializa `randperm(552M)` = 4,4GB +
+  torch.compile (12 workers Triton) + baseline ~7GB do desktop.
+- **Correções aplicadas**: sampler `replacement=True` (sem permutação),
+  `load_token_arrays` mmap direto (1 shard), `num_workers=0`, `compile_threads=2`.
+- **Lição**: treinos longos >1h devem usar sampler com replacement e limitar compile threads.
+
+## Reprodutibilidade
 
 ```bash
-# 1) download 2GB: fineweb2-pt 50% + wiki 15% + carolina 10% + oscar 5%
-#    + QA 8% + aya-pt 7% + oasst-pt 4% + seed
-.venv/bin/python scripts/download_data.py --max-gb 2.0 --output data/raw/corpus_v2.jsonl
-# 2) limpeza (unicode/NFC, dedup sha256, filtro PT, blocklist spam)
-.venv/bin/python scripts/clean_data.py --input data/raw/corpus_v2.jsonl --output data/raw/corpus_v2.clean.jsonl
-# 3) manifesto com licenças por fonte
-.venv/bin/python scripts/prepare_data.py --raw data/raw/corpus_v2.jsonl \
-  --clean data/raw/corpus_v2.clean.jsonl --out metadata/dataset_manifest_v2.json
-# 4) tokenizer v2 (BPE próprio, vocab 8192, ~60M chars)
-.venv/bin/python scripts/train_tokenizer.py --input data/raw/corpus_v2.clean.jsonl \
-  --output artifacts/tokenizer/tokenizer_v2.json --vocab-size 8192
-# 5) dataset (docs embaralhados antes do split; val 5% não-viesada)
-.venv/bin/python scripts/build_dataset.py --input data/raw/corpus_v2.clean.jsonl \
-  --tokenizer artifacts/tokenizer/tokenizer_v2.json --out-dir data/processed_v2
-```
-
-## Treino base v2 (`configs/gpu_v2.json`)
-
-~90M params (d640, L16, H10, ctx512, vocab 8k), 16000 steps × 64 × 512
-= **~524M tokens (~17-20h na RTX 3050 6GB)**, bf16 + torch.compile +
-grad-checkpointing + AdamW fused. VRAM medida: ~1,9/5,7 GB.
-
-```bash
-# inicia (ou retoma com --resume artifacts/checkpoints_v2/latest.pt)
+# mix conversacional (não precisa re-downloadar, já está em data/raw/)
+.venv/bin/python scripts/make_chat_mix.py
+.venv/bin/python scripts/build_dataset.py --input data/raw/corpus_chat.jsonl \
+  --tokenizer artifacts/tokenizer/tokenizer.json --out-dir data/processed_chat
+# ajuste fino (retoma do step 3000 com schedule novo)
+.venv/bin/python train.py --config configs/chat_tune_cont.json --device cuda \
+  --resume artifacts/checkpoints_chat/latest.pt
+# ou do zero (Fase 3a = 3000 steps)
+.venv/bin/python train.py --config configs/chat_tune.json --device cuda
+# ou iniciais do zero (base 90M, 16k steps ~17h)
 .venv/bin/python train.py --config configs/gpu_v2.json --device cuda
-# monitora
-tail -f logs_v2/train.log
 ```
-
-Checkpoints (`artifacts/checkpoints_v2/`): `latest.pt` sempre, `best.pt` na
-melhor val. Early stopping: patience 8 evals. Baseline Fase 2 para comparar:
-`artifacts/evaluation/eval_2026-09-18T22-34-08.json` (20/20 ok, 0 NaN).
-
-## Depois: SFT conversacional (Fase E, ainda não implementada)
-
-Continued training do `best.pt` v2 com mix ~80% conversa / 20% replay,
-LR ~10× menor e loss só nos tokens do assistente (labels `-100` nos turnos
-do usuário) — implementação própria pendente em `src/training.py`.
-
-## Licenças das fontes (atribuição)
-
-- FineWeb-2 por_Latn: **ODC-By 1.0** (atribuição obrigatória)
-- Wikipedia PT: CC BY-SA · aya_dataset (PT): Apache-2.0 · oasst1 (PT): Apache-2.0
-- Carolina/OSCAR/QA-PT: mistas — ver `metadata/dataset_manifest_v2.json`

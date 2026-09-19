@@ -163,4 +163,9 @@ artifacts/ (tokenizer, checkpoints, evaluation) | data/ (raw, processed)
 
 Código: MIT (ver LICENSE). Dados: cada fonte mantém
 sua licença (Wikipedia CC BY-SA; QA-PT verificar; seed próprio livre) —
-detalhes em `docs/DATASET_SELECTION.md`. Este repo não redistribui corpora.
+detalhes em `docs/DATASET_SELECTION.md` e `metadata/dataset_manifest_v2.json`.
+
+## 18. Treino realizado
+
+- **Fase 2** (baseline): 5000 steps, 82M tokens, val=2,55/PPL~12,8, 17,4M params — ver `docs/RESULTS.md`.
+- **Guará — ajuste conversacional**: 14000 steps no total (3000 + 11000), 49M tokens de conversação PT (mix de QA-PT/Aya-PT/OASST-PT + replay), a partir dos pesos da Fase 2. Resultado: val=0,69/PPL=1,99, checkpoints em `artifacts/checkpoints_chat/`. Sem pesos pré-treinados, sem biblioteca de modelo, 100% próprio.
