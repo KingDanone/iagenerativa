@@ -51,6 +51,12 @@ fine-tuning, sem APIs externas**. Todo texto gerado sai do próprio modelo.
                  Texto
 ```
 
+## Tutorial em vídeo
+
+Como usar a IA deste projeto (treino, geração e chat), passo a passo:
+
+<video src="tutorial.mp4" controls width="720"></video>
+
 ## 1. Visão geral
 
 MiniGPT decoder-only de **17,4M parâmetros**, treinado em **31,7M tokens**
@@ -147,7 +153,7 @@ sem memória persistente. Detalhes em `docs/RESULTS.md`.
 ## 16. Estrutura do projeto
 
 ```
-train.py generate.py chat.py evaluate.py | configs/ | scripts/
+train.py generate.py chat.py evaluate.py tutorial.mp4 | configs/ | scripts/
 src/ (tokenizer, dataset, attention, model, training, generation, chat, utils)
 tests/ | eval/prompts_ptbr.txt | docs/ | metadata/ | experiments/ | logs/
 artifacts/ (tokenizer, checkpoints, evaluation) | data/ (raw, processed)
